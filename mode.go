@@ -8,13 +8,13 @@ import (
 	"github.com/corona10/goimagehash"
 )
 
-type Sprite 	image.Image
+type Sprite image.Image
 
 type Mode struct {
-	name						string
+	name string
 
-	frames						[]Sprite
-	spriteSize					image.Rectangle
+	frames     []Sprite
+	spriteSize image.Rectangle
 }
 
 func (m *Mode) Name() string {
@@ -49,6 +49,10 @@ func (m *Mode) SpriteSize() image.Rectangle {
 	return m.spriteSize
 }
 
+// SpriteHash gets a string hash representation of sprite, using the average hash algorithm.
+//
+// License(s) - see internal\licenses:
+// goimagehash
 func SpriteHash(sprite Sprite) string {
 	var hashstr string
 	defer func() {
