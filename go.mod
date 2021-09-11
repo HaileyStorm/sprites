@@ -1,4 +1,4 @@
-module sprites
+module github.com/HaileyStorm/sprites
 
 go 1.16
 
