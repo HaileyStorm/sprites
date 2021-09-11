@@ -8,11 +8,11 @@ import (
 
 type Instance struct {
 	//optional
-	name						string
+	name string
 
-	entity						*Entity
+	entity *Entity
 
-	animation					Animation
+	animation animation
 }
 
 func (i *Instance) Name() string {
@@ -47,8 +47,10 @@ func (i *Instance) SetModeByIndex(index int) error {
 // (if it was running, it still will be, and the currentFrame will be the same and Frame will get that frame from the
 // new mode - except that currentFrame is modulo'd with the len(frames) to ensure it's in range)
 func (i *Instance) SetModeByName(name string) error {
-	idx, ok := i.entity.modeNamesToIndex[name]; if ok {
-		mode, ok := i.entity.modes[idx]; if ok {
+	idx, ok := i.entity.modeNamesToIndex[name]
+	if ok {
+		mode, ok := i.entity.modes[idx]
+		if ok {
 			i.animation.entityMode = mode
 			return nil
 		} else {

@@ -6,10 +6,10 @@ import (
 )
 
 type Entity struct {
-	name						string
+	name string
 
-	modes						map[int]*Mode
-	modeNamesToIndex			map[string]int
+	modes            map[int]*Mode
+	modeNamesToIndex map[string]int
 }
 
 func (e *Entity) Name() string {
@@ -18,7 +18,8 @@ func (e *Entity) Name() string {
 
 //describe index order in docstring
 func (e *Entity) GetModeByIndex(idx int) (*Mode, error) {
-	mode, ok :=e.modes[idx]; if ok {
+	mode, ok := e.modes[idx]
+	if ok {
 		return mode, nil
 	} else {
 		return nil, fmt.Errorf("mode with index %d does not exist in Entity", idx)
@@ -26,8 +27,10 @@ func (e *Entity) GetModeByIndex(idx int) (*Mode, error) {
 }
 
 func (e *Entity) GetModeByName(name string) (*Mode, error) {
-	idx, ok := e.modeNamesToIndex[name]; if ok {
-		mode, ok := e.modes[idx]; if ok {
+	idx, ok := e.modeNamesToIndex[name]
+	if ok {
+		mode, ok := e.modes[idx]
+		if ok {
 			return mode, nil
 		} else {
 			panic(fmt.Errorf("internal error: Mode with index %d does not exist in Entity; Entity is corrupted", idx))
@@ -39,8 +42,10 @@ func (e *Entity) GetModeByName(name string) (*Mode, error) {
 }
 
 func (e *Entity) RenameMode(oldName, newName string) error {
-	idx, ok := e.modeNamesToIndex[oldName]; if ok {
-		mode, ok := e.modes[idx]; if ok {
+	idx, ok := e.modeNamesToIndex[oldName]
+	if ok {
+		mode, ok := e.modes[idx]
+		if ok {
 			mode.name = newName
 			e.modeNamesToIndex[newName] = idx
 			delete(e.modeNamesToIndex, oldName)
@@ -62,7 +67,9 @@ func (e *Entity) SetModeCount(count int) error {
 	if count > 0 && count <= len(e.modes) {
 		var delList []string
 		for k, v := range e.modeNamesToIndex {
-			if v >= count { delList = append(delList, k) }
+			if v >= count {
+				delList = append(delList, k)
+			}
 		}
 		for _, d := range delList {
 			delete(e.modeNamesToIndex, d)
@@ -84,7 +91,7 @@ func (e *Entity) NewInstance(initialMode int) (*Instance, error) {
 	if mode, ok := e.modes[initialMode]; ok {
 		return &Instance{
 			entity: e,
-			animation: Animation{
+			animation: animation{
 				entityMode:   mode,
 				running:      false,
 				currentFrame: 0,

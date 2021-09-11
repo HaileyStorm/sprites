@@ -4,36 +4,38 @@ import (
 	"image"
 )
 
-type Animation struct {
-	entityMode					*Mode
+type animation struct {
+	entityMode *Mode
 
-	running						bool
-	currentFrame				int
+	running      bool
+	currentFrame int
 }
 
-func (a *Animation) startAnimation() {
+func (a *animation) startAnimation() {
 	a.running = true
 }
 
-func (a *Animation) restartAnimation() {
+func (a *animation) restartAnimation() {
 	a.currentFrame = 0
 	a.running = true
 }
 
-func (a *Animation) resetAnimation() {
+func (a *animation) resetAnimation() {
 	a.currentFrame = 0
 	a.running = false
 }
 
-func (a *Animation) stopAnimation() {
+func (a *animation) stopAnimation() {
 	a.running = false
 }
 
-func (a *Animation) frame() Sprite {
+func (a *animation) frame() Sprite {
 	if a.running {
 		a.currentFrame %= a.entityMode.FrameCount()
 		frame, err := a.entityMode.GetFrame(a.currentFrame)
-		if err != nil { panic(err) }
+		if err != nil {
+			panic(err)
+		}
 		a.currentFrame++
 		// We do this after as well so that any changes to the Mode frame count result in the appropriate next frame
 		a.currentFrame %= a.entityMode.FrameCount()
@@ -41,14 +43,16 @@ func (a *Animation) frame() Sprite {
 	}
 	a.currentFrame %= a.entityMode.FrameCount()
 	frame, err := a.entityMode.GetFrame(a.currentFrame)
-	if err != nil { panic(err) }
+	if err != nil {
+		panic(err)
+	}
 	return frame
 }
 
-func (a *Animation) frameCount() int {
+func (a *animation) frameCount() int {
 	return a.entityMode.FrameCount()
 }
 
-func (a *Animation) spriteSize() image.Rectangle {
+func (a *animation) spriteSize() image.Rectangle {
 	return a.entityMode.SpriteSize()
 }

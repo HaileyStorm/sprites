@@ -9,7 +9,7 @@ import (
 )
 
 // subImager is used to ensure the Image provided for a Sheet is one of the image types which receives the SubImage
-// method.
+// and Set methods.
 // For simplicity / user comprehensibility the image parameter in the NewSheet factory is not a subImager but an Image,
 // and the factory uses a type assertion and returns (nil, error) if it fails (as opposed to (Sheet, nil)).
 type subImager interface {
@@ -30,13 +30,13 @@ type SheetDimensions struct {
 	// There are EntitiesPerRow * EntitiesPerColumn Entities in a Sheet.
 	EntitiesPerColumn int
 
-	// ModesPerEntity is the number Modes (version, unique Animation, etc.; e.g. directions of movement) each Entity has.
+	// ModesPerEntity is the number Modes (version, unique animation, etc.; e.g. directions of movement) each Entity has.
 	// An Entity has one Mode per column. An Entity Mode / column may be blank / unused.
 	ModesPerEntity int
-	// The number of (Sprite) frames each Entity Mode Animation has. An Entity has one frame (Sprite) per row.
+	// The number of (Sprite) frames each Entity Mode animation has. An Entity has one frame (Sprite) per row.
 	// A frame/row may be blank/unused (the Entity must specify the number of frames for each Mode, or it defaults to
 	// FramesPerAnimation; if a frame is blank and the Entity Mode frame count includes it,
-	// the blank frame will be shown / included in the Animation - there is no logic to check if a frame is blank).
+	// the blank frame will be shown / included in the animation - there is no logic to check if a frame is blank).
 	FramesPerAnimation int
 	// FramesRunRows controls the orientation of Modes and their frames within an Entity.
 	// False (default) = Each Mode in the entity is a column, and the frames for that Mode run down the column.
@@ -47,15 +47,26 @@ type SheetDimensions struct {
 	// An individual Sprite (frame) is SpriteWidth * SpriteHeight pixels.
 	// The sheet image must be EntitiesPerRow * ModesPerEntity * SpriteWidth pixels wide and
 	// EntitiesPerColumn * FramesPerAnimation * SpriteHeight pixels high.
-	SpriteWidth  int
+
+	// SpriteWidth is the width of each Sprite (Frame) in pixels.
+	SpriteWidth int
+	// SpriteHeight is the height of each Sprite (Frame) in pixels.
 	SpriteHeight int
 }
 
+// EntityAndModeNames contains the name for an Entity and the names for each of its Modes. It is used in the Sheet
+// factories to supply names. The length of ModeNames determines how many Modes will be read/created from the Sheet,
+// and it must be <= the number of Modes available for each Entity in the sheet layout (SheetDimensions.ModesPerEntity).
 type EntityAndModeNames struct {
+	// EntityName is the name used to identify the Entity (as a whole, including all its Modes)
 	EntityName string
-	ModeNames  []string
+	// ModeNames is a slice of names for each of the Entity's Modes.
+	ModeNames []string
 }
 
+// init takes the provided SheetDimensions and assigns the non-exported fields which are used during Sheet creation to
+// control whether Modes are columns and Frames of that Mode rows, or vice versa, based on the supplied
+// SheetDimensions.FramesRunRows field.
 func (d *SheetDimensions) init() {
 	if d.FramesRunRows {
 		d.numEntityColumns = d.FramesPerAnimation
@@ -66,6 +77,14 @@ func (d *SheetDimensions) init() {
 	}
 }
 
+// Sheet holds the Entities of the sheets, along with an Entity name lookup map. An Entity is a unit of Sprites (such
+// as a character), and it has Modes which are different states or views (such as direction character is walking), and
+// each Mode has a slice of Sprite (image) Frames comprising its animation.
+// When using a Sheet (which should be created only once for a given sprite sheet image / file), one should get an
+// Instance of an Entity (multiple copies of an entity may exist in an environment), which has a current Mode state
+// and an underlying animation which is used by the Instance to control what its current frame is;
+// said current frame may be requested directly, or Instance.PlaceSprite may be used to place the current frame on a
+// provided image.
 type Sheet struct {
 	// entities is a map of index->Entity (pointer). Index is the position on the Sheet, which starts at upper-left and
 	// wraps back to the left at the end of a row of Entities.
@@ -74,6 +93,8 @@ type Sheet struct {
 	entityNamesToIndex map[string]int
 }
 
+// NewSheet is a basic factory to create a new Sheet from a sprite sheet image and SheetDimensions info about how it is
+// organized.
 // img is the underlying image.Image which contains all the sub images / pixel data for each Sprite.
 // The image must implement SubImage() and be EntitiesPerRow * ModesPerEntity * SpriteWidth pixels wide and
 // EntitiesPerColumn * FramesPerAnimation * SpriteHeight pixels high.
