@@ -67,8 +67,10 @@ func (d *SheetDimensions) init() {
 }
 
 type Sheet struct {
-	//Test
-	entities           map[int]*Entity
+	// entities is a map of index->Entity (pointer). Index is the position on the Sheet, which starts at upper-left and
+	// wraps back to the left at the end of a row of Entities.
+	entities map[int]*Entity
+	// entityNamesToIndex is a map of Entity.name -> index, where index is a key in entities.
 	entityNamesToIndex map[string]int
 }
 
