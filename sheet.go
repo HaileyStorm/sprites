@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"image"
-	"image/color"
+	"image/draw"
 	"strconv"
 )
 
@@ -13,8 +13,7 @@ import (
 // For simplicity / user comprehensibility the image parameter in the NewSheet factory is not a subImager but an Image,
 // and the factory uses a type assertion and returns (nil, error) if it fails (as opposed to (Sheet, nil)).
 type subImager interface {
-	image.Image
-	Set(x int, y int, c color.Color)
+	draw.Image
 	SubImage(r image.Rectangle) image.Image
 }
 
@@ -86,7 +85,7 @@ func (d *SheetDimensions) init() {
 // said current frame may be requested directly, or Instance.PlaceSprite may be used to place the current frame on a
 // provided image.
 type Sheet struct {
-	// entities is a map of index->Entity (pointer). Index is the position on the Sheet, which starts at upper-left and
+	// entities is a map of index->GetEntity (pointer). Index is the position on the Sheet, which starts at upper-left and
 	// wraps back to the left at the end of a row of Entities.
 	entities map[int]*Entity
 	// entityNamesToIndex is a map of Entity.name -> index, where index is a key in entities.
@@ -110,7 +109,7 @@ func NewSheet(img image.Image, dimensions SheetDimensions) (*Sheet, error) {
 	modeNames := generateModeNames(dimensions.ModesPerEntity)
 	var names []EntityAndModeNames
 	for i := 0; i < dimensions.EntitiesPerRow*dimensions.EntitiesPerColumn; i++ {
-		names = append(names, EntityAndModeNames{"Entity" + strconv.Itoa(i), modeNames})
+		names = append(names, EntityAndModeNames{"GetEntity" + strconv.Itoa(i), modeNames})
 	}
 
 	newSheet.generateEntities(spriteSheet, dimensions, names)
@@ -191,11 +190,11 @@ func createSpriteSheet(img image.Image, dimensions SheetDimensions) (subImager, 
 			return nil, errors.New("all SheetDimensions fields must be > 0")
 		}
 		if spriteSheet.Bounds().Dx() != dimensions.EntitiesPerRow*dimensions.numEntityColumns*dimensions.SpriteWidth {
-			return nil, fmt.Errorf("image width (%d) is not EntitiesPerRow * #cols/Entity * SpriteWidth (%d)",
+			return nil, fmt.Errorf("image width (%d) is not EntitiesPerRow * #cols/GetEntity * SpriteWidth (%d)",
 				spriteSheet.Bounds().Dx(), dimensions.EntitiesPerRow*dimensions.numEntityColumns*dimensions.SpriteWidth)
 		}
 		if spriteSheet.Bounds().Dy() != dimensions.EntitiesPerColumn*dimensions.numEntityRows*dimensions.SpriteHeight {
-			return nil, fmt.Errorf("image height (%d) is not EntitiesPerColumn * #rows/Entity * SpriteHeight (%d)",
+			return nil, fmt.Errorf("image height (%d) is not EntitiesPerColumn * #rows/GetEntity * SpriteHeight (%d)",
 				spriteSheet.Bounds().Dy(), dimensions.EntitiesPerColumn*dimensions.numEntityRows*dimensions.SpriteHeight)
 		}
 
@@ -272,7 +271,7 @@ func (s *Sheet) GetEntityByName(name string) (*Entity, error) {
 		if entity, ok := s.entities[idx]; ok {
 			return entity, nil
 		} else {
-			panic(fmt.Errorf("internal error: Entity with index %d does not exist in Sheet; Sheet is corrupted", idx))
+			panic(fmt.Errorf("internal error: GetEntity with index %d does not exist in Sheet; Sheet is corrupted", idx))
 		}
 	} else {
 		return nil, fmt.Errorf("entity with name %s does not exist in Sheet", name)
@@ -288,7 +287,7 @@ func (s *Sheet) RenameEntity(oldName, newName string) error {
 			s.entityNamesToIndex[newName] = idx
 			delete(s.entityNamesToIndex, oldName)
 		} else {
-			panic(fmt.Errorf("internal error: Entity with index %d does not exist in Sheet; Sheet is corrupted", idx))
+			panic(fmt.Errorf("internal error: GetEntity with index %d does not exist in Sheet; Sheet is corrupted", idx))
 		}
 	} else {
 		return fmt.Errorf("entity with name %s does not exist in Sheet", oldName)
@@ -317,6 +316,6 @@ func (s *Sheet) SetEntityCount(count int) error {
 		}
 		return nil
 	} else {
-		return fmt.Errorf("new Entity count (%d) must be <= the current Entity count (%d) and > 0", count, len(s.entities))
+		return fmt.Errorf("new GetEntity count (%d) must be <= the current GetEntity count (%d) and > 0", count, len(s.entities))
 	}
 }

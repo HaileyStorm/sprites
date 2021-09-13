@@ -10,9 +10,9 @@ type Instance struct {
 	//optional
 	name string
 
-	entity *Entity
+	*Entity
 
-	animation animation
+	*animation
 }
 
 func (i *Instance) Name() string {
@@ -23,20 +23,12 @@ func (i *Instance) SetName(name string) {
 	i.name = name
 }
 
-func (i *Instance) Entity() *Entity {
-	return i.entity
-}
-
-func (i *Instance) Mode() *Mode {
-	return i.animation.entityMode
-}
-
 //note in docstrings that changing mode does NOT stop or restart the animation
 // (if it was running, it still will be, and the currentFrame will be the same and Frame will get that frame from the
 // new mode - except that currentFrame is modulo'd with the len(frames) to ensure it's in range)
 func (i *Instance) SetModeByIndex(index int) error {
-	if mode, ok := i.entity.modes[index]; ok {
-		i.animation.entityMode = mode
+	if mode, ok := i.modes[index]; ok {
+		i.Mode = mode
 		return nil
 	} else {
 		return fmt.Errorf("mode with index %d does not exist in instance Entity", index)
@@ -47,11 +39,11 @@ func (i *Instance) SetModeByIndex(index int) error {
 // (if it was running, it still will be, and the currentFrame will be the same and Frame will get that frame from the
 // new mode - except that currentFrame is modulo'd with the len(frames) to ensure it's in range)
 func (i *Instance) SetModeByName(name string) error {
-	idx, ok := i.entity.modeNamesToIndex[name]
+	idx, ok := i.modeNamesToIndex[name]
 	if ok {
-		mode, ok := i.entity.modes[idx]
+		mode, ok := i.modes[idx]
 		if ok {
-			i.animation.entityMode = mode
+			i.Mode = mode
 			return nil
 		} else {
 			panic(fmt.Errorf("internal error: Mode with index %d does not exist in Entity; Entity is corrupted", idx))
@@ -60,42 +52,6 @@ func (i *Instance) SetModeByName(name string) error {
 		return fmt.Errorf("mode with name %s does not exist in Entity", name)
 	}
 
-}
-
-func (i *Instance) ModeCount() int {
-	return i.entity.ModeCount()
-}
-
-func (i *Instance) StartAnimation() {
-	i.animation.startAnimation()
-}
-
-func (i *Instance) RestartAnimation() {
-	i.animation.restartAnimation()
-}
-
-func (i *Instance) ResetAnimation() {
-	i.animation.resetAnimation()
-}
-
-func (i *Instance) StopAnimation() {
-	i.animation.stopAnimation()
-}
-
-func (i *Instance) Frame() Sprite {
-	return i.animation.frame()
-}
-
-func (i *Instance) FrameCount() int {
-	return i.animation.frameCount()
-}
-
-func (i *Instance) GetFrame(idx int) (Sprite, error) {
-	return i.Mode().GetFrame(idx)
-}
-
-func (i *Instance) SpriteSize() image.Rectangle {
-	return i.animation.spriteSize()
 }
 
 // note that it gets next frame and places that. To not advance the animation, first stop it and then call this (and then start it

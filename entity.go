@@ -90,9 +90,9 @@ func (e *Entity) SpriteSize() image.Rectangle {
 func (e *Entity) NewInstance(initialMode int) (*Instance, error) {
 	if mode, ok := e.modes[initialMode]; ok {
 		return &Instance{
-			entity: e,
-			animation: animation{
-				entityMode:   mode,
+			Entity: e,
+			animation: &animation{
+				Mode:         mode,
 				running:      false,
 				currentFrame: 0,
 			},
