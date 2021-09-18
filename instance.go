@@ -54,11 +54,12 @@ func (i *Instance) SetModeByName(name string) error {
 
 }
 
+// note that placeAt is expected to be within canvas.Bounds() (that is, not necessarily relative to (0,0))
 // note that it gets next frame and places that. To not advance the animation, first stop it and then call this (and then start it
 func (i *Instance) PlaceSprite(canvas draw.Image, placeAt image.Point) {
 	frame := i.Frame()
 
 	// SpriteSize (Rect) + Point = rect translated (placed at) Point. This is placement location on dst. The zero point + frame.Bounds().Min is the rect in source to grab
 	// (this is the only area on the source - frame - that has data, but has to be done because Bounds() does not always start at (0,0) - indeed if made from a SubImage it doesn't unless the location on the original started at (0,0))
-	draw.Draw(canvas, i.SpriteSize().Add(placeAt), frame, image.Pt(0, 0).Add(frame.Bounds().Min), draw.Over)
+	draw.Draw(canvas, i.SpriteSize().Add(placeAt), frame, frame.Bounds().Min, draw.Over)
 }

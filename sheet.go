@@ -4,18 +4,10 @@ import (
 	"errors"
 	"fmt"
 	"image"
-	"image/draw"
 	"strconv"
-)
 
-// subImager is used to ensure the Image provided for a Sheet is one of the image types which receives the SubImage
-// and Set methods.
-// For simplicity / user comprehensibility the image parameter in the NewSheet factory is not a subImager but an Image,
-// and the factory uses a type assertion and returns (nil, error) if it fails (as opposed to (Sheet, nil)).
-type subImager interface {
-	draw.Image
-	SubImage(r image.Rectangle) image.Image
-}
+	ccsl_graphics "github.com/HaileyStorm/CCSL_go/graphics"
+)
 
 type SheetDimensions struct {
 	// EntitiesPerRow is the number of Entities each row of a Sheet contains - the number of columns,
@@ -97,7 +89,7 @@ type Sheet struct {
 // img is the underlying image.Image which contains all the sub images / pixel data for each Sprite.
 // The image must implement SubImage() and be EntitiesPerRow * ModesPerEntity * SpriteWidth pixels wide and
 // EntitiesPerColumn * FramesPerAnimation * SpriteHeight pixels high.
-func NewSheet(img image.Image, dimensions SheetDimensions) (*Sheet, error) {
+func NewSheet(img ccsl_graphics.SubImager, dimensions SheetDimensions) (*Sheet, error) {
 	dimensions.init()
 	spriteSheet, err := createSpriteSheet(img, dimensions)
 	if err != nil {
@@ -119,14 +111,14 @@ func NewSheet(img image.Image, dimensions SheetDimensions) (*Sheet, error) {
 
 // note that len(names) defines the number of populated/used entities
 //describe entity index order in docstring
-func NewSheetWithEntityNames(img image.Image, dimensions SheetDimensions, entityNames []string) (*Sheet, error) {
+func NewSheetWithEntityNames(img ccsl_graphics.SubImager, dimensions SheetDimensions, entityNames []string) (*Sheet, error) {
 	modeNames := generateModeNames(dimensions.ModesPerEntity)
 
 	return NewSheetWithEntityAndSharedModeNames(img, dimensions, entityNames, modeNames)
 }
 
 // Mode names for each Entity are the same
-func NewSheetWithEntityAndSharedModeNames(img image.Image, dimensions SheetDimensions, entityNames []string, modeNames []string) (*Sheet, error) {
+func NewSheetWithEntityAndSharedModeNames(img ccsl_graphics.SubImager, dimensions SheetDimensions, entityNames []string, modeNames []string) (*Sheet, error) {
 	if len(entityNames) > dimensions.EntitiesPerRow*dimensions.EntitiesPerColumn {
 		return nil, fmt.Errorf("length of entityNames (%d) is greater than number of Entities in Sheet, i.e. EntitiesPerRow * EntitiesPerColumn (%d)",
 			len(entityNames), dimensions.EntitiesPerRow*dimensions.EntitiesPerColumn)
@@ -152,7 +144,7 @@ func NewSheetWithEntityAndSharedModeNames(img image.Image, dimensions SheetDimen
 
 //note that len(names) defines the number of populated/used Entities, and len of each key defines the number of populate/used modes for the given Entity
 //describe entity and mode index order in docstring
-func NewSheetWithNames(img image.Image, dimensions SheetDimensions, names []EntityAndModeNames) (*Sheet, error) {
+func NewSheetWithNames(img ccsl_graphics.SubImager, dimensions SheetDimensions, names []EntityAndModeNames) (*Sheet, error) {
 	if len(names) > dimensions.EntitiesPerRow*dimensions.EntitiesPerColumn {
 		return nil, fmt.Errorf("length of names (%d) is greater than number of Entities in Sheet, i.e. EntitiesPerRow * EntitiesPerColumn (%d)",
 			len(names), dimensions.EntitiesPerRow*dimensions.EntitiesPerColumn)
@@ -182,26 +174,21 @@ func NewSheetWithNames(img image.Image, dimensions SheetDimensions, names []Enti
 	return newSheet, nil
 }
 
-func createSpriteSheet(img image.Image, dimensions SheetDimensions) (subImager, error) {
-	spriteSheet, ok := img.(subImager)
-	if ok {
-		if dimensions.EntitiesPerRow <= 0 || dimensions.EntitiesPerColumn <= 0 || dimensions.ModesPerEntity <= 0 ||
-			dimensions.FramesPerAnimation <= 0 || dimensions.SpriteWidth <= 0 || dimensions.SpriteHeight <= 0 {
-			return nil, errors.New("all SheetDimensions fields must be > 0")
-		}
-		if spriteSheet.Bounds().Dx() != dimensions.EntitiesPerRow*dimensions.numEntityColumns*dimensions.SpriteWidth {
-			return nil, fmt.Errorf("image width (%d) is not EntitiesPerRow * #cols/GetEntity * SpriteWidth (%d)",
-				spriteSheet.Bounds().Dx(), dimensions.EntitiesPerRow*dimensions.numEntityColumns*dimensions.SpriteWidth)
-		}
-		if spriteSheet.Bounds().Dy() != dimensions.EntitiesPerColumn*dimensions.numEntityRows*dimensions.SpriteHeight {
-			return nil, fmt.Errorf("image height (%d) is not EntitiesPerColumn * #rows/GetEntity * SpriteHeight (%d)",
-				spriteSheet.Bounds().Dy(), dimensions.EntitiesPerColumn*dimensions.numEntityRows*dimensions.SpriteHeight)
-		}
-
-		return spriteSheet, nil
-	} else {
-		return nil, errors.New("provided image is a format which implements the SubImage and/or Set methods")
+func createSpriteSheet(spriteSheet ccsl_graphics.SubImager, dimensions SheetDimensions) (ccsl_graphics.SubImager, error) {
+	if dimensions.EntitiesPerRow <= 0 || dimensions.EntitiesPerColumn <= 0 || dimensions.ModesPerEntity <= 0 ||
+		dimensions.FramesPerAnimation <= 0 || dimensions.SpriteWidth <= 0 || dimensions.SpriteHeight <= 0 {
+		return nil, errors.New("all SheetDimensions fields must be > 0")
 	}
+	if spriteSheet.Bounds().Dx() != dimensions.EntitiesPerRow*dimensions.numEntityColumns*dimensions.SpriteWidth {
+		return nil, fmt.Errorf("image width (%d) is not EntitiesPerRow * #cols/GetEntity * SpriteWidth (%d)",
+			spriteSheet.Bounds().Dx(), dimensions.EntitiesPerRow*dimensions.numEntityColumns*dimensions.SpriteWidth)
+	}
+	if spriteSheet.Bounds().Dy() != dimensions.EntitiesPerColumn*dimensions.numEntityRows*dimensions.SpriteHeight {
+		return nil, fmt.Errorf("image height (%d) is not EntitiesPerColumn * #rows/GetEntity * SpriteHeight (%d)",
+			spriteSheet.Bounds().Dy(), dimensions.EntitiesPerColumn*dimensions.numEntityRows*dimensions.SpriteHeight)
+	}
+
+	return spriteSheet, nil
 }
 
 func generateModeNames(count int) []string {
@@ -212,7 +199,7 @@ func generateModeNames(count int) []string {
 	return names
 }
 
-func (s *Sheet) generateEntities(spriteSheet subImager, dimensions SheetDimensions, names []EntityAndModeNames) {
+func (s *Sheet) generateEntities(spriteSheet ccsl_graphics.SubImager, dimensions SheetDimensions, names []EntityAndModeNames) {
 	if len(names) > dimensions.EntitiesPerRow*dimensions.EntitiesPerColumn {
 		panic(fmt.Errorf("internal error: names has more keys (%d) than spriteSheet has Entities (%d)",
 			len(names), dimensions.EntitiesPerRow*dimensions.EntitiesPerColumn))
@@ -227,8 +214,8 @@ func (s *Sheet) generateEntities(spriteSheet subImager, dimensions SheetDimensio
 			panic(fmt.Errorf("names value, the slice of Mode names, has more entries (%d) than dimensions.ModesPerEntity (%d)",
 				len(emNames.ModeNames), dimensions.ModesPerEntity))
 		}
-		x = (i % dimensions.EntitiesPerRow) * dimensions.numEntityColumns * dimensions.SpriteWidth
-		y = (i / dimensions.EntitiesPerRow) * dimensions.numEntityRows * dimensions.SpriteHeight
+		x = ((i % dimensions.EntitiesPerRow) * dimensions.numEntityColumns * dimensions.SpriteWidth) + spriteSheet.Bounds().Min.X
+		y = ((i / dimensions.EntitiesPerRow) * dimensions.numEntityRows * dimensions.SpriteHeight) + spriteSheet.Bounds().Min.Y
 		s.entities[i] = &Entity{
 			name: emNames.EntityName,
 		}
@@ -247,7 +234,7 @@ func (s *Sheet) generateEntities(spriteSheet subImager, dimensions SheetDimensio
 					dx = j
 					dy = f
 				}
-				frame = spriteSheet.SubImage(spriteSize.Add(image.Pt(x+dx*dimensions.SpriteWidth, y+dy*dimensions.SpriteHeight)))
+				frame = spriteSheet.SubImage(spriteSize.Add(image.Point{X: x + dx*dimensions.SpriteWidth, Y: y + dy*dimensions.SpriteHeight}))
 				s.entities[i].modes[j].frames = append(s.entities[i].modes[j].frames, frame)
 			}
 			s.entities[i].modeNamesToIndex[modeName] = j
