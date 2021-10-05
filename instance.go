@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"image"
 	"image/draw"
+
+	ccsl_graphics "github.com/HaileyStorm/CCSL_go/graphics"
 )
 
 type Instance struct {
@@ -61,5 +63,19 @@ func (i *Instance) PlaceSprite(canvas draw.Image, placeAt image.Point) {
 
 	// SpriteSize (Rect) + Point = rect translated (placed at) Point. This is placement location on dst. The zero point + frame.Bounds().Min is the rect in source to grab
 	// (this is the only area on the source - frame - that has data, but has to be done because Bounds() does not always start at (0,0) - indeed if made from a SubImage it doesn't unless the location on the original started at (0,0))
-	draw.Draw(canvas, i.SpriteSize().Add(placeAt), frame, frame.Bounds().Min, draw.Over)
+	// If frame is fully opaque, we can use one of two faster methods to place it on canvas. If not, we must use
+	// draw.Draw with draw.Over to respect the transparencies in combining it with canvas.
+	if i.Mode.fullyOpaque {
+		var img *ccsl_graphics.Image
+		var ok bool
+		// If canvas is a ccsl_graphics.Image, we can use the specialized/simplified PlaceAtPoint instead of draw.Draw,
+		// which is much faster (even with draw.Src and nil mask).
+		if img, ok = canvas.(*ccsl_graphics.Image); ok {
+			img.PlaceAtPoint(frame.(*image.RGBA), placeAt)
+		} else {
+			draw.Draw(canvas, i.SpriteSize().Add(placeAt), frame, frame.Bounds().Min, draw.Src)
+		}
+	} else {
+		draw.Draw(canvas, i.SpriteSize().Add(placeAt), frame, frame.Bounds().Min, draw.Over)
+	}
 }

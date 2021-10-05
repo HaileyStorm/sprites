@@ -13,12 +13,23 @@ type Sprite image.Image
 type Mode struct {
 	name string
 
-	frames     []Sprite
-	spriteSize image.Rectangle
+	spriteSize  image.Rectangle
+	fullyOpaque bool
+
+	frames []Sprite
 }
 
 func (m *Mode) Name() string {
 	return m.name
+}
+
+func (m *Mode) SpriteSize() image.Rectangle {
+	//return (m.frames[0]).Bounds().Sub((m.frames[0]).Bounds().Min)
+	return m.spriteSize
+}
+
+func (m *Mode) FullyOpaque() bool {
+	return m.fullyOpaque
 }
 
 //note that unlike Instance.Frame() this does not advance the current frame (there is no current frame - this is an Instance concept)
@@ -42,11 +53,6 @@ func (m *Mode) SetFrameCount(count int) error {
 	} else {
 		return fmt.Errorf("new frame count (%d) must be <= the current frame count (%d) and > 0", count, len(m.frames))
 	}
-}
-
-func (m *Mode) SpriteSize() image.Rectangle {
-	//return (m.frames[0]).Bounds().Sub((m.frames[0]).Bounds().Min)
-	return m.spriteSize
 }
 
 // SpriteHash gets a string hash representation of sprite, using the average hash algorithm.

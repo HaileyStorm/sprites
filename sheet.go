@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"image"
+	"image/draw"
 	"strconv"
 
 	ccsl_graphics "github.com/HaileyStorm/CCSL_go/graphics"
@@ -32,8 +33,9 @@ type SheetDimensions struct {
 	// FramesRunRows controls the orientation of Modes and their frames within an Entity.
 	// False (default) = Each Mode in the entity is a column, and the frames for that Mode run down the column.
 	// True = Each Mode in the entity is a row, and the frames for that Mode run along the row.
-	FramesRunRows                   bool
-	numEntityColumns, numEntityRows int
+	FramesRunRows    bool
+	numEntityColumns int
+	numEntityRows    int
 
 	// An individual Sprite (frame) is SpriteWidth * SpriteHeight pixels.
 	// The sheet image must be EntitiesPerRow * ModesPerEntity * SpriteWidth pixels wide and
@@ -188,7 +190,15 @@ func createSpriteSheet(spriteSheet ccsl_graphics.SubImager, dimensions SheetDime
 			spriteSheet.Bounds().Dy(), dimensions.EntitiesPerColumn*dimensions.numEntityRows*dimensions.SpriteHeight)
 	}
 
-	return spriteSheet, nil
+	// If it's not already, convert the sheet to an RGBA so generateEntities can check opacity
+	var rgba *image.RGBA
+	var ok bool
+	if rgba, ok = spriteSheet.(*image.RGBA); !ok {
+		rgba = image.NewRGBA(spriteSheet.Bounds())
+		draw.Draw(rgba, spriteSheet.Bounds(), spriteSheet, image.Point{}, draw.Src)
+	}
+
+	return rgba, nil
 }
 
 func generateModeNames(count int) []string {
@@ -206,6 +216,7 @@ func (s *Sheet) generateEntities(spriteSheet ccsl_graphics.SubImager, dimensions
 	}
 	var x, y, dx, dy int
 	var frame image.Image
+	var opaque bool
 	spriteSize := image.Rect(0, 0, dimensions.SpriteWidth, dimensions.SpriteHeight)
 	s.entities = make(map[int]*Entity)
 	s.entityNamesToIndex = make(map[string]int)
@@ -226,6 +237,7 @@ func (s *Sheet) generateEntities(spriteSheet ccsl_graphics.SubImager, dimensions
 				name:       modeName,
 				spriteSize: spriteSize,
 			}
+			opaque = true
 			for f := 0; f < dimensions.FramesPerAnimation; f++ {
 				if dimensions.FramesRunRows {
 					dx = f
@@ -236,7 +248,11 @@ func (s *Sheet) generateEntities(spriteSheet ccsl_graphics.SubImager, dimensions
 				}
 				frame = spriteSheet.SubImage(spriteSize.Add(image.Point{X: x + dx*dimensions.SpriteWidth, Y: y + dy*dimensions.SpriteHeight}))
 				s.entities[i].modes[j].frames = append(s.entities[i].modes[j].frames, frame)
+				if !frame.(*image.RGBA).Opaque() {
+					opaque = false
+				}
 			}
+			s.entities[i].modes[j].fullyOpaque = opaque
 			s.entities[i].modeNamesToIndex[modeName] = j
 		}
 		s.entityNamesToIndex[emNames.EntityName] = i
