@@ -1,6 +1,7 @@
 package sprites
 
 import (
+	"errors"
 	"fmt"
 	"image"
 )
@@ -87,13 +88,18 @@ func (e *Entity) SpriteSize() image.Rectangle {
 	return e.modes[0].SpriteSize()
 }
 
-func (e *Entity) NewInstance(initialMode int) (*Instance, error) {
+func (e *Entity) NewInstance(initialMode int, advanceEvery int) (*Instance, error) {
 	if mode, ok := e.modes[initialMode]; ok {
+		if advanceEvery <= 0 {
+			return nil, errors.New("advanceEvery must be > 0")
+		}
 		return &Instance{
 			Entity: e,
 			animation: &animation{
 				Mode:         mode,
 				running:      false,
+				advanceEvery: advanceEvery,
+				advanceCt:    0,
 				currentFrame: 0,
 			},
 		}, nil
@@ -102,12 +108,12 @@ func (e *Entity) NewInstance(initialMode int) (*Instance, error) {
 	}
 }
 
-func (e *Entity) NewInstanceWithModeName(initialMode string) (*Instance, error) {
+func (e *Entity) NewInstanceWithModeName(initialMode string, advanceEvery int) (*Instance, error) {
 	if idx, ok := e.modeNamesToIndex[initialMode]; ok {
-		if instance, err := e.NewInstance(idx); err == nil {
+		if instance, err := e.NewInstance(idx, advanceEvery); err == nil {
 			return instance, nil
 		} else {
-			panic(fmt.Errorf("internal error: Mode with index %d does not exist in Entity; Entity is corrupted", idx))
+			panic(fmt.Errorf("internal error:%v", err))
 		}
 	} else {
 		return nil, fmt.Errorf("mode with name %s does not exist in Entity", initialMode)
