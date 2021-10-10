@@ -58,9 +58,17 @@ func (i *Instance) SetModeByName(name string) error {
 
 // note that placeAt is expected to be within canvas.Bounds() (that is, not necessarily relative to (0,0))
 // note that it gets next frame and places that. To not advance the animation, first stop it and then call this (and then start it
-func (i *Instance) PlaceSprite(canvas draw.Image, placeAt image.Point) {
+func (i *Instance) PlaceOn(canvas draw.Image, placeAt image.Point) {
 	frame := i.Frame()
+	i.place(frame, canvas, placeAt, i.SpriteSize())
+}
 
+func (i *Instance) PlaceOnResized(canvas draw.Image, placeAt image.Point, w, h uint) {
+	frame := i.Frame()
+	i.place(ccsl_graphics.ResizeMaintain(frame.(*image.RGBA), w, h), canvas, placeAt, i.SpriteSize())
+}
+
+func (i *Instance) place(frame Sprite, canvas draw.Image, placeAt image.Point, rect image.Rectangle) {
 	// SpriteSize (Rect) + Point = rect translated (placed at) Point. This is placement location on dst. The zero point + frame.Bounds().Min is the rect in source to grab
 	// (this is the only area on the source - frame - that has data, but has to be done because Bounds() does not always start at (0,0) - indeed if made from a SubImage it doesn't unless the location on the original started at (0,0))
 	// If frame is fully opaque, we can use one of two faster methods to place it on canvas. If not, we must use
@@ -73,9 +81,9 @@ func (i *Instance) PlaceSprite(canvas draw.Image, placeAt image.Point) {
 		if img, ok = canvas.(*ccsl_graphics.Image); ok {
 			img.PlaceAtPoint(frame.(*image.RGBA), placeAt)
 		} else {
-			draw.Draw(canvas, i.SpriteSize().Add(placeAt), frame, frame.Bounds().Min, draw.Src)
+			draw.Draw(canvas, rect.Add(placeAt), frame, frame.Bounds().Min, draw.Src)
 		}
 	} else {
-		draw.Draw(canvas, i.SpriteSize().Add(placeAt), frame, frame.Bounds().Min, draw.Over)
+		draw.Draw(canvas, rect.Add(placeAt), frame, frame.Bounds().Min, draw.Over)
 	}
 }

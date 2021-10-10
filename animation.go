@@ -1,6 +1,11 @@
 package sprites
 
-import "errors"
+import (
+	"errors"
+	"image"
+
+	ccsl_graphics "github.com/HaileyStorm/CCSL_go/graphics"
+)
 
 type animation struct {
 	*Mode
@@ -56,6 +61,11 @@ func (a *animation) Frame() Sprite {
 	}
 
 	return frame
+}
+
+func (a *animation) FrameResized(w, h uint) Sprite {
+	frame := a.Frame()
+	return ccsl_graphics.ResizeMaintain(frame.(*image.RGBA), w, h)
 }
 
 func (a *animation) Advance() {

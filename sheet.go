@@ -41,10 +41,19 @@ type SheetDimensions struct {
 	// The sheet image must be EntitiesPerRow * ModesPerEntity * SpriteWidth pixels wide and
 	// EntitiesPerColumn * FramesPerAnimation * SpriteHeight pixels high.
 
-	// SpriteWidth is the width of each Sprite (Frame) in pixels.
+	// SpriteWidth is the width of each Sprite (Frame) in pixels. It is the size on the source sprite sheet image.
 	SpriteWidth int
-	// SpriteHeight is the height of each Sprite (Frame) in pixels.
+	// SpriteHeight is the height of each Sprite (Frame) in pixels. It is the size on the source sprite sheet image.
 	SpriteHeight int
+
+	// ResizeWidth is the saved width of each Sprite (Frame) in pixels. It is optional. If != 0 and this and/or
+	// ResizeHeight are != SpriteWidth/SpriteHeight, each Sprite is resized and saved in the Sheet accordingly.
+	// The aspect ratios of the original and the resized Sprites must match (SpriteWidth/SpriteHeight=ResizeWidth/ResizeHeight).
+	ResizeWidth int
+	// ResizeHeight is the saved width of each Sprite (Frame) in pixels. It is optional. If != 0 and this and/or
+	// ResizeWidth are != SpriteHeight/SpriteWidth, each Sprite is resized and saved in the Sheet accordingly.
+	// The aspect ratios of the original and the resized Sprites must match (SpriteWidth/SpriteHeight=ResizeWidth/ResizeHeight).
+	ResizeHeight int
 }
 
 // EntityAndModeNames contains the name for an Entity and the names for each of its Modes. It is used in the Sheet
@@ -76,7 +85,7 @@ func (d *SheetDimensions) init() {
 // When using a Sheet (which should be created only once for a given sprite sheet image / file), one should get an
 // Instance of an Entity (multiple copies of an entity may exist in an environment), which has a current Mode state
 // and an underlying animation which is used by the Instance to control what its current frame is;
-// said current frame may be requested directly, or Instance.PlaceSprite may be used to place the current frame on a
+// said current frame may be requested directly, or Instance.PlaceOn may be used to place the current frame on a
 // provided image.
 type Sheet struct {
 	// entities is a map of index->GetEntity (pointer). Index is the position on the Sheet, which starts at upper-left and
@@ -93,7 +102,7 @@ type Sheet struct {
 // EntitiesPerColumn * FramesPerAnimation * SpriteHeight pixels high.
 func NewSheet(img ccsl_graphics.SubImager, dimensions SheetDimensions) (*Sheet, error) {
 	dimensions.init()
-	spriteSheet, err := createSpriteSheet(img, dimensions)
+	spriteSheet, err := createSpriteSheet(img, &dimensions)
 	if err != nil {
 		return nil, err
 	}
@@ -127,7 +136,7 @@ func NewSheetWithEntityAndSharedModeNames(img ccsl_graphics.SubImager, dimension
 	}
 
 	dimensions.init()
-	spriteSheet, err := createSpriteSheet(img, dimensions)
+	spriteSheet, err := createSpriteSheet(img, &dimensions)
 	if err != nil {
 		return nil, err
 	}
@@ -153,7 +162,7 @@ func NewSheetWithNames(img ccsl_graphics.SubImager, dimensions SheetDimensions, 
 	}
 
 	dimensions.init()
-	spriteSheet, err := createSpriteSheet(img, dimensions)
+	spriteSheet, err := createSpriteSheet(img, &dimensions)
 	if err != nil {
 		return nil, err
 	}
@@ -176,7 +185,7 @@ func NewSheetWithNames(img ccsl_graphics.SubImager, dimensions SheetDimensions, 
 	return newSheet, nil
 }
 
-func createSpriteSheet(spriteSheet ccsl_graphics.SubImager, dimensions SheetDimensions) (ccsl_graphics.SubImager, error) {
+func createSpriteSheet(spriteSheet ccsl_graphics.SubImager, dimensions *SheetDimensions) (ccsl_graphics.SubImager, error) {
 	if dimensions.EntitiesPerRow <= 0 || dimensions.EntitiesPerColumn <= 0 || dimensions.ModesPerEntity <= 0 ||
 		dimensions.FramesPerAnimation <= 0 || dimensions.SpriteWidth <= 0 || dimensions.SpriteHeight <= 0 {
 		return nil, errors.New("all SheetDimensions fields must be > 0")
@@ -196,6 +205,16 @@ func createSpriteSheet(spriteSheet ccsl_graphics.SubImager, dimensions SheetDime
 	if rgba, ok = spriteSheet.(*image.RGBA); !ok {
 		rgba = image.NewRGBA(spriteSheet.Bounds())
 		draw.Draw(rgba, spriteSheet.Bounds(), spriteSheet, image.Point{}, draw.Src)
+	}
+
+	if dimensions.ResizeWidth > 0 && dimensions.ResizeWidth != dimensions.SpriteWidth {
+		if (float32(dimensions.ResizeWidth) / float32(dimensions.ResizeHeight)) != (float32(dimensions.SpriteWidth) / float32(dimensions.SpriteHeight)) {
+			return nil, errors.New("sprite resize aspect ratio () is not the same as original ratio")
+		}
+		resizeRatio := float32(dimensions.ResizeWidth) / float32(dimensions.SpriteWidth)
+		rgba = ccsl_graphics.ResizeMaintain(rgba, uint(float32(spriteSheet.Bounds().Dx())*resizeRatio), uint(float32(spriteSheet.Bounds().Dy())*resizeRatio)).(*image.RGBA)
+		dimensions.SpriteWidth = dimensions.ResizeWidth
+		dimensions.SpriteHeight = dimensions.ResizeHeight
 	}
 
 	return rgba, nil
