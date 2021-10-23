@@ -25,6 +25,10 @@ func (a *animation) StartAnimation() {
 	a.running = true
 }
 
+func (a *animation) ResumeAnimation() {
+	a.running = true
+}
+
 func (a *animation) RestartAnimation() {
 	a.advanceCt = 0
 	a.currentFrame = 0

@@ -46,11 +46,11 @@ type SheetDimensions struct {
 	// SpriteHeight is the height of each Sprite (Frame) in pixels. It is the size on the source sprite sheet image.
 	SpriteHeight int
 
-	// ResizeWidth is the saved width of each Sprite (Frame) in pixels. It is optional. If != 0 and this and/or
+	// ResizeWidth is the saved width of each Sprite (Frame) in pixels. It is OPTIONAL. If != 0 and this and/or
 	// ResizeHeight are != SpriteWidth/SpriteHeight, each Sprite is resized and saved in the Sheet accordingly.
 	// The aspect ratios of the original and the resized Sprites must match (SpriteWidth/SpriteHeight=ResizeWidth/ResizeHeight).
 	ResizeWidth int
-	// ResizeHeight is the saved width of each Sprite (Frame) in pixels. It is optional. If != 0 and this and/or
+	// ResizeHeight is the saved width of each Sprite (Frame) in pixels. It is OPTIONAL. If != 0 and this and/or
 	// ResizeWidth are != SpriteHeight/SpriteWidth, each Sprite is resized and saved in the Sheet accordingly.
 	// The aspect ratios of the original and the resized Sprites must match (SpriteWidth/SpriteHeight=ResizeWidth/ResizeHeight).
 	ResizeHeight int
