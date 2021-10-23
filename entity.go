@@ -1,7 +1,6 @@
 package sprites
 
 import (
-	"errors"
 	"fmt"
 	"image"
 )
@@ -88,18 +87,13 @@ func (e *Entity) SpriteSize() image.Rectangle {
 	return e.modes[0].SpriteSize()
 }
 
-func (e *Entity) NewInstance(initialMode int, advanceEvery int) (*Instance, error) {
+func (e *Entity) NewInstance(initialMode int) (*Instance, error) {
 	if mode, ok := e.modes[initialMode]; ok {
-		if advanceEvery <= 0 {
-			return nil, errors.New("advanceEvery must be > 0")
-		}
 		return &Instance{
 			Entity: e,
 			animation: &animation{
 				Mode:         mode,
 				running:      false,
-				advanceEvery: advanceEvery,
-				advanceCt:    0,
 				currentFrame: 0,
 			},
 		}, nil
@@ -108,9 +102,9 @@ func (e *Entity) NewInstance(initialMode int, advanceEvery int) (*Instance, erro
 	}
 }
 
-func (e *Entity) NewInstanceWithModeName(initialMode string, advanceEvery int) (*Instance, error) {
+func (e *Entity) NewInstanceWithModeName(initialMode string) (*Instance, error) {
 	if idx, ok := e.modeNamesToIndex[initialMode]; ok {
-		if instance, err := e.NewInstance(idx, advanceEvery); err == nil {
+		if instance, err := e.NewInstance(idx); err == nil {
 			return instance, nil
 		} else {
 			panic(fmt.Errorf("internal error:%v", err))

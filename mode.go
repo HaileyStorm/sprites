@@ -32,7 +32,7 @@ func (m *Mode) FullyOpaque() bool {
 	return m.fullyOpaque
 }
 
-//note that unlike Instance.Frame() this does not advance the current frame (there is no current frame - this is an Instance concept)
+//note that unlike Instance.Frame() this does not advance the current frame (there is no current frame in Mode - this is an Instance concept)
 func (m *Mode) GetFrame(index int) (Sprite, error) {
 	if index < len(m.frames) {
 		return m.frames[index], nil

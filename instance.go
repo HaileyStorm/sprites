@@ -57,7 +57,7 @@ func (i *Instance) SetModeByName(name string) error {
 }
 
 // note that placeAt is expected to be within canvas.Bounds() (that is, not necessarily relative to (0,0))
-// note that it gets next frame and places that. To not advance the animation, first stop it and then call this (and then start it
+// note that it gets next frame and places that. To not advance the animation, first stop it and then call this (and then start it again)
 func (i *Instance) PlaceOn(canvas draw.Image, placeAt image.Point) {
 	frame := i.Frame()
 	i.place(frame, canvas, placeAt, i.SpriteSize())
